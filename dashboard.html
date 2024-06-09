@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Dashboard</title>
+		<script type="module" src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+        <link rel="stylesheet" href="/css/main.min.css">
+        <link rel="stylesheet" href="/css/global.css">
+        <script type="module" src="/js/navbar-admin.js"></script>
+        <script type="module" src="/js/dashboard.js"></script>
+		<link rel='stylesheet' href='https://cdn-uicons.flaticon.com/uicons-solid-rounded/css/uicons-solid-rounded.css'>
+		<link rel='stylesheet' href='https://cdn-uicons.flaticon.com/uicons-solid-rounded/css/uicons-solid-straight.css'>
+</head>
+
+<body class="bg-light">
+	<nav class="navbar sticky-top navbar-expand-md navbar-light py-0" style="background-color: white;">
+		<div class="container-fluid justify-content-center">
+		    <a class="navbar-brand col-9 col-md-2 ms-0 ms-md-4" href="#"><img src="/images/logo.png" alt="Kuya D's" height="40"/></a>
+		    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+				<span class="navbar-toggler-icon"></span>
+		    </button>
+		    <div class="collapse col-9 col-md-10 navbar-collapse justify-content-end" id="navbarSupportedContent">
+				<div class="col-12 col-md-6"></div>
+				<ul class="navbar-nav col-12 col-md-auto justify-content-center mb-2 mb-lg-0">
+					<li class="nav-item col-sm-auto px-3 text-center py-2 bg-primary">
+						<a class="nav-link active" aria-current="page" href="#">Dashboard</a>
+					</li>
+					<li class="nav-item nav-btn-track-orders col-sm-auto px-3 text-center py-2">
+						<a class="nav-link" href="menu-items.html">Manage Menu</a>
+					</li>
+					<li class="nav-item nav-btn-cart col-sm-auto px-3 text-center py-2">
+						<a class="nav-link" href="bookings.html">Bookings</a>
+					</li>
+					<li class="nav-item nav-btn-cart col-sm-auto px-3 text-center py-2">
+						<a class="nav-link" href="users.html">Users</a>
+					</li>
+					<li class="nav-item nav-btn-avatar col-sm-auto px-3 text-center py-auto dropdown">
+						<a class="nav-link" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+							<img class="user-avatar my-0 py-0" alt="">
+						</a>
+						<ul class="dropdown-menu dropdown-menu-end">
+							<li><a class="dropdown-item text-center disabled text-primary" href="#"><img class="user-avatar my-0 py-0" alt=""></a></li>
+							<li><a class="dropdown-item text-center dropdown-text-email disabled text-primary" href="#">Email Address</a></li>
+							<li><a class="dropdown-item text-center text-danger" href="#" id="btnLogout">Log out</a></li>
+						</ul>
+					</li>
+				</ul>
+		    </div>
+		</div>
+	</nav>
+
+	<div class="px-4 pt-4 pb-2">
+		<div class="row">
+			<div id="containerBookingToday" class="col-12 p-4">
+				<div id="cardBookingToday" class="row rounded bg-white p-4 justify-content-center">
+					<p class="col-12 text-dark text-center mt-0 fw-bold">Bookings Today</p>
+					<div id="bookingsContainer" class="row px-auto">
+					</div>
+				</div>
+			</div>
+
+			<div class="col-4 p-4">
+				<div id="cardBookings" class="row rounded bg-white p-4 justify-content-center">
+					<div class="col-8 row">
+						<h6 id="tvBookings" class="col-12 display-5 text-dark text-start mb-0 fw-bold">0</h3>
+						<p class="col-12 text-dark text-start mt-0 fw-bold">Bookings This Week</p>
+					</div>
+					<div class="col-4 row">
+						<p class="col-2 text-dark text-center my-auto"><i class="fi fi-sr-book-open-cover"></i></p>
+					</div>
+				</div>
+			</div>
+	
+			<div class="col-4 p-4">
+				<div id="cardMenuItems" class="row rounded bg-white p-4 justify-content-center">
+					<div class="col-8 row">
+						<h6 id="tvMenuItems" class="col-12 display-5 text-dark text-start mb-0 fw-bold">0</h3>
+						<p class="col-12 text-dark text-start mt-0 fw-bold">Menu Items</p>
+					</div>
+					<div class="col-4 row">
+						<p class="col-2 text-dark text-center my-auto"><i class="fi fi-sr-notebook-alt"></i></p>
+					</div>
+				</div>
+			</div>
+	
+			<div class="col-4 p-4">
+				<div id="cardRevenue" class="row rounded bg-white p-4 justify-content-center">
+					<div class="col-8 row">
+						<h6 id="tvRevenue" class="col-12 display-5 text-dark text-start mb-0 fw-bold">0</h3>
+						<p class="col-12 text-dark text-start mt-0 fw-bold">Revenue This Month</p>
+					</div>
+					<div class="col-4 row">
+						<p class="col-2 text-dark text-center my-auto"><i class="fi fi-sr-peso-sign"></i></p>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="col-12">
+			<div class="row">
+				<div class="col-4 p-4">
+					<div id="cardBookingsHistory" class="row rounded bg-white p-4 justify-content-center">
+						<div class="row col-12 rounded bg-white justify-content-center">
+							<p class="col-12 text-dark text-start mt-0 fw-bold">Bookings History</p>
+							<p id="tvEmptyBookingsHistory" class="d-none text-center mb-0 pb-0">No data to display</p>
+							<div id="divBookingsHistory" class="d-none col-12 text-center">
+								<canvas id="chartBookingsHistory"></canvas>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="col-4 p-4">
+					<div id="cardCategories" class="row rounded bg-white p-4 justify-content-center">
+						<div class="row col-12 rounded bg-white justify-content-center">
+							<p class="col-12 text-dark text-start mt-0 fw-bold">Menu Categories</p>
+							<p id="tvEmptyCategories" class="d-none text-center mb-0 pb-0">No data to display</p>
+							<div id="divCategories" class="d-none col-12 text-center">
+								<canvas id="chartCategories"></canvas>
+							</div>
+						</div>
+					</div>
+				</div>
+				
+				<div class="col-4 p-4">
+					<div id="cardRevenueAllTime" class="row rounded bg-white p-4 justify-content-center">
+						<div class="row col-12 rounded bg-white justify-content-center">
+							<p class="col-12 text-dark text-start mt-0 fw-bold">Revenue History</p>
+							<p id="tvEmptyRevenueAllTime" class="d-none text-center mb-0 pb-0">No data to display</p>
+							<div id="divRevenueAllTime" class="d-none col-12 text-center">
+								<canvas id="chartRevenueAllTime"></canvas>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<script src="/node_modules/bootstrap/dist/js/bootstrap.bundle.js"></script>
+</body>
+</html>

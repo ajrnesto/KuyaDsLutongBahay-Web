@@ -1,29 +1,29 @@
-import { db, storage } from '../js/firebase.js';
-import { doc, collection, addDoc, setDoc, getDoc, deleteDoc, updateDoc, increment, query, where, orderBy, startAt, endAt, onSnapshot } from 'https://www.gstatic.com/firebasejs/9.16.0/firebase-firestore.js';
-import { ref, uploadBytes, getDownloadURL, deleteObject } from "../node_modules/firebase/firebase-storage.js";
-import { showModal, hideModal, resetValidation, invalidate } from '../js/utils.js';
+import { db, auth, storage } from '../js/firebase.js';
+import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.5.2/firebase-auth.js';
+import { doc, collection, collectionGroup, addDoc, setDoc, getDoc, getDocs, deleteDoc, updateDoc, increment, query, where, orderBy, startAt, endAt, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.5.2/firebase-firestore.js';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.5.2/firebase-storage.js";
+import { blockNonAdmins, showModal, hideModal, resetValidation, invalidate } from '../js/utils.js';
 
 // table
-const tbodyProducts = document.querySelector('#tbodyProducts');
+const divMenuItems = document.querySelector('#divMenuItems');
 // modal
-const tvManageProductTitle = document.querySelector('#tvManageProductTitle');
-const btnSaveProduct = document.querySelector('#btnSaveProduct');
-const btnCancelProductManagement = document.querySelector('#btnCancelProductManagement');
+const tvManageMenuItemTitle = document.querySelector('#tvManageMenuItemTitle');
+const btnSaveMenuItem = document.querySelector('#btnSaveMenuItem');
+const btnCancelMenuItemManagement = document.querySelector('#btnCancelMenuItemManagement');
 // modal form
 const menuCategory = document.querySelector('#menuCategory');
-const etProductName = document.querySelector('#etProductName');
-const etProductDetails = document.querySelector('#etProductDetails');
+const etMenuItemName = document.querySelector('#etMenuItemName');
+const etMenuItemDetails = document.querySelector('#etMenuItemDetails');
 const etPrice = document.querySelector('#etPrice');
-const etStock = document.querySelector('#etStock');
-const imgProduct = document.querySelector("#imgProduct")
+const imgMenuItem = document.querySelector("#imgMenuItem")
 const btnUploadImage = document.querySelector("#btnUploadImage")
-let selectedProductImage = null;
+let selectedMenuItemImage = null;
 let productThumbnailWasChanged = false;
 
-const etSearchProduct = document.querySelector('#etSearchProduct');
+const etSearchMenuItem = document.querySelector('#etSearchMenuItem');
 const menuCategoriesFilter = document.querySelector('#menuCategoriesFilter');
-const btnSearchProduct = document.querySelector('#btnSearchProduct');
-let unsubProductsListener = null;
+const btnSearchMenuItem = document.querySelector('#btnSearchMenuItem');
+let unsubMenuItemsListener = null;
 
 // delete modal
 const tvConfirmDeleteMessage = document.querySelector('#tvConfirmDeleteMessage');
@@ -32,91 +32,101 @@ const btnDelete = document.querySelector('#btnDelete');
 const productNameValidator = document.querySelectorAll('.product-name-validator');
 const productDetailsValidator = document.querySelectorAll('.product-details-validator');
 const priceValidator = document.querySelectorAll('.price-validator');
-const stockValidator = document.querySelectorAll('.stock-validator');
+
+onAuthStateChanged(auth, user => {
+	blockNonAdmins(user);
+});
 
 window.addEventListener("load", function() {
 	autosizeTextareas();
-	renderProducts();
+	getMenuItems();
 });
 
-window.manageProduct = manageProduct;
-window.confirmDeleteProduct = confirmDeleteProduct;
+window.manageMenuItem = manageMenuItem;
+window.confirmDeleteMenuItem = confirmDeleteMenuItem;
 
 btnUploadImage.addEventListener("change", () => {
-	selectedProductImage = btnUploadImage.files[0];
-	imgProduct.src = URL.createObjectURL(selectedProductImage);
-	console.log("CHANGED PRODUCT IMAGE: "+imgProduct.src);
+	selectedMenuItemImage = btnUploadImage.files[0];
+	imgMenuItem.src = URL.createObjectURL(selectedMenuItemImage);
+	console.log("CHANGED PRODUCT IMAGE: "+imgMenuItem.src);
 	productThumbnailWasChanged = true;
 });
 
-btnSearchProduct.addEventListener("click", function() {
+btnSearchMenuItem.addEventListener("click", function() {
 	console.log("Searching for products...");
 
-	if (unsubProductsListener != null) {
-		unsubProductsListener();
+	if (unsubMenuItemsListener != null) {
+		unsubMenuItemsListener();
 	}
 
-	renderProducts();
+	getMenuItems();
 });
 
-function renderProducts() {
-	const searchKey = etSearchProduct.value.toUpperCase();
+menuCategoriesFilter.addEventListener("change", () => {
+	getMenuItems();
+});
+
+function getMenuItems() {
+	const searchKey = etSearchMenuItem.value.toUpperCase();
 	const selectedCategory = menuCategoriesFilter.value;
 
-	let qryProducts = null;
+	let qryMenuItems = null;
 
 	if (selectedCategory == -1) {
 		if (searchKey == "") {
-			qryProducts = query(collection(db, "products"));
+			qryMenuItems = query(collection(db, "products"));
 		}
 		else {
-			qryProducts = query(collection(db, "products"), orderBy("productNameAllCaps"), startAt(searchKey), endAt(searchKey+'\uf8ff'));
+			qryMenuItems = query(collection(db, "products"), orderBy("productNameAllCaps"), startAt(searchKey), endAt(searchKey+'\uf8ff'));
 		}
 	}
 	else {
 		if (searchKey == "") {
-			qryProducts = query(collection(db, "products"), where("categoryId", "==", selectedCategory));
+			qryMenuItems = query(collection(db, "products"), where("categoryId", "==", selectedCategory));
 		}
 		else {
-			qryProducts = query(collection(db, "products"), orderBy("productNameAllCaps"), startAt(searchKey), endAt(searchKey+'\uf8ff'), where("categoryId", "==", selectedCategory));
+			qryMenuItems = query(collection(db, "products"), orderBy("productNameAllCaps"), startAt(searchKey), endAt(searchKey+'\uf8ff'), where("categoryId", "==", selectedCategory));
 		}
 	}
 	
-	unsubProductsListener = onSnapshot(qryProducts, (snapProducts) => {
+	unsubMenuItemsListener = onSnapshot(qryMenuItems, (snapMenuItems) => {
 		// clear table
-		tbodyProducts.innerHTML = '';
+		divMenuItems.innerHTML = '';
 
-		snapProducts.forEach(product => {
-            renderProductsTable(
-				product.id,
-				product.data().productName,
-				product.data().productDetails,
-				product.data().categoryId,
-				product.data().price,
-				product.data().stock,
-				product.data().thumbnail
-			);
-        });
+		snapMenuItems.forEach(product => {
+			getDoc(doc(db, "categories", product.data().categoryId)).then((category) => {
+				renderMenuItems(
+					product.id,
+					product.data().productName,
+					product.data().productDetails,
+					product.data().price,
+					product.data().categoryId,
+					category.data().categoryName,
+					product.data().thumbnail
+				);
+			});
+    	});
 	});
 }
 
-async function renderProductsTable(id, productName, productDetails, categoryId, price, stock, thumbnail) {
-    const newRow = document.createElement('tr');
-    const cellThumbnail = document.createElement('td');
-    	const imgThumbnail = document.createElement('img');
-    const cellProductName = document.createElement('td');
-    const cellProductDetails = document.createElement('td');
-    const cellPrice = document.createElement('td');
-    const cellCategory = document.createElement('td');
-    const cellStock = document.createElement('td');
-    const cellAction = document.createElement('td');
-		const buttonEdit = document.createElement('button');
-			const buttonEditIcon = document.createElement('i');
-		const buttonDelete = document.createElement('button');
-			const buttonDeleteIcon = document.createElement('i');
+async function renderMenuItems(id, productName, productDetails, price, categoryId, categoryName, thumbnail) {
+  const cardContainer = document.createElement('div');
+  const card = document.createElement('div');
+  const imgThumbnail = document.createElement('img');
+  const tvItemName = document.createElement('h5');
+  const tvCategory = document.createElement('h6');
+  const tvPrice = document.createElement('h6');
+  const tvDescription = document.createElement('p');
+	const buttonEdit = document.createElement('button');
+		const buttonEditIcon = document.createElement('i');
+	const buttonDelete = document.createElement('button');
+		const buttonDeleteIcon = document.createElement('i');
+
+	cardContainer.className = "col-3 p-3";
+	card.className = "col-12 p-3 rounded text-center shadow";
 	
 	if (thumbnail == null){
-		imgThumbnail.src = "https://via.placeholder.com/150?text=Image";
+		imgThumbnail.src = "https://via.placeholder.com/150?text=No+Image";
 	}
 	else {
 		getDownloadURL(ref(storage, 'products/'+thumbnail))
@@ -124,94 +134,99 @@ async function renderProductsTable(id, productName, productDetails, categoryId, 
 				imgThumbnail.src = url;
 			});
 	}
-	imgThumbnail.className = "col-12";
-	imgThumbnail.style.width = "50px";
-	imgThumbnail.style.height = "50px";
-	imgThumbnail.style.objectFit = "fill";
+	imgThumbnail.className = "col-12 mb-2 rounded";
+	imgThumbnail.style.objectFit = "cover";
+	imgThumbnail.style.aspectRatio = "1/1";
 
-	cellProductName.innerHTML = productName;
-	cellProductDetails.innerHTML = productDetails;
-	cellPrice.innerHTML = "₱"+Number(price).toFixed(2);
-	getDoc(doc(db, "categories", categoryId)).then((category) => {
-		cellCategory.innerHTML = category.data().categoryName;
-	});
-	cellStock.innerHTML = stock;
+	tvItemName.innerHTML = productName;
+	tvCategory.innerHTML = categoryName;
+	tvCategory.style.fontSize = "0.85rem";
+	tvCategory.className = "text-dark";
+	tvPrice.innerHTML = "₱" + Number(price).toFixed(2) + "/Head";
+	tvPrice.className = "text-dark";
+	tvDescription.innerHTML = productDetails;
+	tvDescription.style.fontSize = "0.85rem";
+	tvDescription.style.display = "-webkit-box";
+	tvDescription.style.overflow = "hidden";
+	tvDescription.style.textOverflow = "ellipsis";
+	tvDescription.style.webkitLineClamp = "4";
+	tvDescription.style.webkitBoxOrient = "vertical";
+	// getDoc(doc(db, "categories", categoryId)).then((category) => {
+	// 	cellCategory.innerHTML = category.data().categoryName;
+	// });
 
     buttonEdit.className = "btn btn-no-border btn-primary col me-2";
-    buttonEdit.onclick = function() { manageProduct(id, productName, productDetails, categoryId, price, stock, thumbnail) };
+    buttonEdit.onclick = function() { manageMenuItem(id, productName, productDetails, categoryId, price, thumbnail) };
 	buttonEdit.type = 'button';
 		buttonEditIcon.className = "bi bi-pencil-fill text-light";
 		buttonEditIcon.style.fontSize = "0.8rem";
 
 	buttonDelete.className = "btn btn-no-border btn-danger col";
-	buttonDelete.onclick = function() { confirmDeleteProduct(id, productName, thumbnail, categoryId) };
+	buttonDelete.onclick = function() { confirmDeleteMenuItem(id, productName, thumbnail, categoryId) };
 	buttonDelete.type = 'button';
 		buttonDeleteIcon.className = "bi bi-trash-fill text-light";
 		buttonDeleteIcon.style.fontSize = "0.8rem";
 
-    newRow.appendChild(cellThumbnail);
-		cellThumbnail.appendChild(imgThumbnail);
-    newRow.appendChild(cellProductName);
-    newRow.appendChild(cellProductDetails);
-    newRow.appendChild(cellPrice);
-    newRow.appendChild(cellCategory);
-    newRow.appendChild(cellStock);
-    newRow.appendChild(cellAction);
-		cellAction.appendChild(buttonEdit);
+    cardContainer.appendChild(card);
+		card.appendChild(imgThumbnail);
+    card.appendChild(tvItemName);
+    card.appendChild(tvCategory);
+    card.appendChild(tvPrice);
+    card.appendChild(tvDescription);
+		card.appendChild(buttonEdit);
 			buttonEdit.appendChild(buttonEditIcon);
-		cellAction.appendChild(buttonDelete);
+			card.appendChild(buttonDelete);
 			buttonDelete.appendChild(buttonDeleteIcon);
 
-	tbodyProducts.append(newRow);
+		divMenuItems.append(cardContainer);
 }
 
-function manageProduct(id, productName, productDetails, categoryId, price, stock, oldThumbnail) {
-	selectedProductImage = null;
+function manageMenuItem(id, productName, productDetails, categoryId, price, oldThumbnail) {
+	selectedMenuItemImage = null;
 	resetCategorySelection();
-
-	console.log("SELECTED PRODUCT ID: "+id);
 
 	const NEW_PRODUCT = (id == null);
 	if (!NEW_PRODUCT) {
-		showModal('#modalManageProduct');
-		tvManageProductTitle.textContent = "Edit Product";
-		btnSaveProduct.textContent = "Save Product";
+		showModal('#modalManageMenuItem');
+		tvManageMenuItemTitle.textContent = "Edit Item";
+		btnSaveMenuItem.textContent = "Save Item";
 
-		etProductName.value = productName;
-		etProductDetails.value = productDetails;
+		etMenuItemName.value = productName;
+		etMenuItemDetails.value = productDetails;
 		etPrice.value = Number(price).toFixed(2);
-		etStock.value = Number(stock);
 		menuCategory.value = categoryId;
 
 		console.log("MENU CATEGORY ID IS: "+categoryId);
 
 		if (oldThumbnail == null) {
-			imgProduct.src = "https://via.placeholder.com/150?text=Image";
+			imgMenuItem.src = "https://via.placeholder.com/150?text=No+Image";
 		}
 		else {
 			getDownloadURL(ref(storage, 'products/'+oldThumbnail)).then((url) => {
-				imgProduct.src = url;
+				imgMenuItem.src = url;
 			});
 		}
 	}
 	else if (NEW_PRODUCT) {
-		imgProduct.src = "https://via.placeholder.com/150?text=Image";
-		tvManageProductTitle.textContent = "Add Product";
-		btnSaveProduct.textContent = "Add Product";
+		imgMenuItem.src = "https://via.placeholder.com/150?text=No+Image";
+		tvManageMenuItemTitle.textContent = "Add Menu Item";
+		btnSaveMenuItem.textContent = "Add Menu Item";
+
 		menuCategory.value = "Uncategorized";
+		etMenuItemName.value = "";
+		etMenuItemDetails.value = "";
 	}
 
-	btnSaveProduct.onclick = function() {
-		saveProduct(id, oldThumbnail);
+	btnSaveMenuItem.onclick = function() {
+		saveMenuItem(id, oldThumbnail);
 	}
 }
 
-function saveProduct(productId, oldThumbnail) {
+function saveMenuItem(productId, oldThumbnail) {
 	const category = menuCategory.value;
-	const productName = etProductName.value;
-	const productDetails = etProductDetails.value;
+	const productName = etMenuItemName.value;
+	const productDetails = etMenuItemDetails.value;
 	const price = etPrice.value;
-	const stock = etStock.value;
 
 	const PRODUCT_NAME_IS_INVALID = (productName == null || productName == "");
 	if (PRODUCT_NAME_IS_INVALID) {
@@ -220,8 +235,8 @@ function saveProduct(productId, oldThumbnail) {
 	}
 	resetValidation(productNameValidator);
 
-	const PRODUCT_DETAILS_ARE_INVALID = (productDetails == null || productDetails == "");
-	if (PRODUCT_DETAILS_ARE_INVALID) {
+	const PRODUCT_DETAILS_IS_INVALID = (productDetails == null || productDetails == "");
+	if (PRODUCT_DETAILS_IS_INVALID) {
 		invalidate(productDetailsValidator);
 		return;
 	}
@@ -234,92 +249,85 @@ function saveProduct(productId, oldThumbnail) {
 	}
 	resetValidation(priceValidator);
 
-	const STOCK_IS_INVALID = (stock == null || stock == "");
-	if (STOCK_IS_INVALID) {
-		invalidate(stockValidator);
-		return;
-	}
-	resetValidation(stockValidator);
-
 	let productImageFileName = null;
-	if (selectedProductImage != null) {
+	if (selectedMenuItemImage != null) {
 		productImageFileName = Date.now();
 
-		uploadBytes(ref(storage, "products/"+productImageFileName), selectedProductImage).then((snapshot) => {
-			uploadProductData(productId, productName, productDetails, price, stock, category, productImageFileName, oldThumbnail);
+		uploadBytes(ref(storage, "products/"+productImageFileName), selectedMenuItemImage).then((snapshot) => {
+			uploadMenuItemData(productId, productName, productDetails, price, category, productImageFileName, oldThumbnail);
 		});
 	}
 	else {
-		uploadProductData(productId, productName, productDetails, price, stock, category, productImageFileName, oldThumbnail);
+		uploadMenuItemData(productId, productName, productDetails, price, category, productImageFileName, oldThumbnail);
 	}
 }
 
-function uploadProductData(productId, productName, productDetails, price, stock, category, productImageFileName, oldThumbnail) {
-	console.log("Product image was changed?: " + productThumbnailWasChanged);
+function uploadMenuItemData(productId, productName, productDetails, price, category, productImageFileName, oldThumbnail) {
 	const NEW_PRODUCT = (productId == null);
+	
+	let productRef = null;
+	let status = null;
+	
 	if (NEW_PRODUCT) {
-		addDoc(collection(db, "products"), {
-			productName: productName,
-			productNameAllCaps: productName.toUpperCase(),
-			productDetails: productDetails,
-			price: parseFloat(price),
-			stock: parseInt(stock),
-			categoryId: category,
-			thumbnail: productImageFileName
-		});
-		updateDoc(doc(db, "categories", category), {
-			products: increment(1)
-		});
+		productRef = doc(db, "products", String(Date.now()));
 	}
 	else if (!NEW_PRODUCT) {
-		if (productThumbnailWasChanged) {
-			deleteObject(ref(storage, 'products/'+oldThumbnail)).then(() => {
-				setDoc(doc(db, "products", productId), {
-					productName: productName,
-					productNameAllCaps: productName.toUpperCase(),
-					productDetails: productDetails,
-					price: parseFloat(price),
-					stock: parseInt(stock),
-					categoryId: category,
-					thumbnail: productImageFileName
-				});
-			}).catch((error) => {
-				console.log("FAILED TO CHANGE THUMBNAIL: "+error);
-			});			  
-
-			// reset variable
-			productThumbnailWasChanged = false;
-		}
-		else if (!productThumbnailWasChanged) {
-			updateDoc(doc(db, "products", productId), {
-				productName: productName,
-				productNameAllCaps: productName.toUpperCase(),
-				productDetails: productDetails,
-				price: parseFloat(price),
-				stock: parseInt(stock),
-				categoryId: category
-			});
-		}
+		productRef = doc(db, "products", productId);
 	}
 
-	etProductName.value = "";
-	etProductDetails.value = "";
+	if (productThumbnailWasChanged) {
+		deleteObject(ref(storage, 'products/'+oldThumbnail)).then(() => {
+		}).catch((error) => {
+			console.log("FAILED TO CHANGE THUMBNAIL: "+error);
+		});			  
+
+		// reset variable
+		productThumbnailWasChanged = false;
+	}
+	else if (oldThumbnail != null) {
+		productImageFileName = oldThumbnail;
+	}
+
+	console.log("GENERATED ID: "+productRef.id);
+
+	setDoc((productRef), {
+		id: productRef.id,
+		productName: productName,
+		productDetails: productDetails,
+		price: parseFloat(price),
+		productNameAllCaps: productName.toUpperCase(),
+		categoryId: category,
+		thumbnail: productImageFileName
+	});
+
+	if (NEW_PRODUCT) {
+		// increment category
+		const categoryRef = doc(db, "categories", category);
+		updateDoc((categoryRef), {
+			products: increment(1)
+		})
+	}
+
+	etMenuItemName.value = "";
+	etMenuItemDetails.value = "";
 	etPrice.value = "";
-	etStock.value = "";
 	console.log("SAVED PRODUCT ID: "+productId);
-	hideModal('#modalManageProduct');
+	hideModal('#modalManageMenuItem');
 }
 
-function confirmDeleteProduct(productId, productName, thumbnail, categoryId) {
-	tvConfirmDeleteMessage.textContent = "Delete the product \"" + productName + "\"?";
+function confirmDeleteMenuItem(productId, productName, thumbnail, categoryId) {
+	tvConfirmDeleteMessage.textContent = "Delete the item \"" + productName + "\"?";
+	btnDelete.textContent = "Delete MenuItem";
 	showModal('#modalConfirmDelete');
 
+	console.log("DELETING PRODUCT: "+productId);
+
 	btnDelete.onclick = function() {
-		deleteProduct(productId, categoryId);
+		deleteMenuItem(productId, categoryId);
 	};
 }
 
-function deleteProduct(productId, categoryId) {
+function deleteMenuItem(productId, categoryId) {
 	hideModal("#modalConfirmDelete");
 	deleteDoc(doc(db, "products", productId)).then(() => {
 		updateDoc(doc(db, "categories", categoryId), {
@@ -327,6 +335,19 @@ function deleteProduct(productId, categoryId) {
 		});
 	}).catch((error) => {
 		console.log("COULD NOT DELETE DATA: "+ error);
+	});
+
+	deleteCartItems(productId);
+}
+
+function deleteCartItems(productId) {
+	const qryCartItems = query(collectionGroup(db, "items"), where("productId", "==", productId));
+
+	getDocs(qryCartItems).then((docRefs) => {
+
+		docRefs.forEach((docRef) => {
+			deleteDoc(docRef.ref);
+		});
 	});
 }
 

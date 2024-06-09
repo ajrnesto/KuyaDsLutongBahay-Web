@@ -18,7 +18,7 @@
 <body class="bg-light">
 	<nav class="navbar sticky-top navbar-expand-md navbar-light py-0" style="background-color: white;">
 		<div class="container-fluid justify-content-center">
-		    <a class="navbar-brand col-9 col-md-2 ms-0 ms-md-4" href="#"><img src="/images/logo.png" alt="J&J" width="80"/></a>
+		    <a class="navbar-brand col-9 col-md-2 ms-0 ms-md-4" href="#"><img src="/images/logo.png" alt="Kuya D's" height="40"/></a>
 		    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
 				<span class="navbar-toggler-icon"></span>
 		    </button>
@@ -29,10 +29,13 @@
 						<a class="nav-link" href="dashboard.html">Dashboard</a>
 					</li>
 					<li class="nav-item nav-btn-track-orders col-sm-auto px-3 text-center py-2">
-						<a class="nav-link" href="products.html">Manage Products</a>
+						<a class="nav-link" href="menu-items.html">Manage Menu</a>
 					</li>
 					<li class="nav-item nav-btn-cart col-sm-auto px-3 text-center py-2 bg-primary">
-						<a class="nav-link active" aria-current="page" href="#">Orders</a>
+						<a class="nav-link active" aria-current="page" href="#">Bookings</a>
+					</li>
+					<li class="nav-item nav-btn-cart col-sm-auto px-3 text-center py-2">
+						<a class="nav-link" href="users.html">Users</a>
 					</li>
 					<li class="nav-item nav-btn-avatar col-sm-auto px-3 text-center py-auto dropdown">
 						<a class="nav-link" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -48,61 +51,67 @@
 		    </div>
 		</div>
 	</nav>
+	
+	<div class="toast-container position-fixed top-25 end-0 p-3">
+		<div id="toastBooking" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+		  <div class="toast-header">
+			<strong class="me-auto text-primary">Updated Booking Status</strong>
+			<small>Just now</small>
+			<button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+		  </div>
+		  <div id="toastContentBooking" class="toast-body">
+			Hello, world! This is a toast message.
+		  </div>
+		</div>
+	</div>
 
-	<div class="text-center mt-3">
+	<div id="tabsOrders" class="text-center mt-3">
 		<div class="btn-group" role="group" aria-label="Basic radio toggle button group">
 			<input type="radio" class="btn-check" name="btnradio" id="btnPending" autocomplete="off" checked>
-			<label id="btnPendingLabel" class="btn btn-outline-secondary" for="btnPending">Pending</label>
+			<label id="btnPendingLabel" class="btn btn-outline-primary" for="btnPending">Pending</label>
+		  
+			<input type="radio" class="btn-check" name="btnradio" id="btnConfirmed" autocomplete="off">
+			<label id="btnConfirmedLabel" class="btn btn-outline-primary" for="btnConfirmed">Confirmed</label>
 		  
 			<input type="radio" class="btn-check" name="btnradio" id="btnPreparing" autocomplete="off">
-			<label id="btnPreparingLabel" class="btn btn-outline-secondary" for="btnPreparing">Preparing</label>
-		  
-			<input type="radio" class="btn-check" name="btnradio" id="btnReadyForPickup" autocomplete="off">
-			<label id="btnReadyForPickupLabel" class="btn btn-outline-secondary" for="btnReadyForPickup">Ready for Pick-up</label>
+			<label id="btnPreparingLabel" class="btn btn-outline-primary" for="btnPreparing">Preparing</label>
 		  
 			<input type="radio" class="btn-check" name="btnradio" id="btnInTransit" autocomplete="off">
-			<label id="btnInTransitLabel" class="btn btn-outline-secondary" for="btnInTransit">In Transit</label>
+			<label id="btnInTransitLabel" class="btn btn-outline-primary" for="btnInTransit">In Transit</label>
 		  
 			<input type="radio" class="btn-check" name="btnradio" id="btnCompleted" autocomplete="off">
-			<label id="btnCompletedLabel" class="btn btn-outline-secondary" for="btnCompleted">Delivered/Picked-up</label>
+			<label id="btnCompletedLabel" class="btn btn-outline-primary" for="btnCompleted">Completed</label>
 		  </div>
 	</div>
 
-	<div id="ordersContainer">
-		<!--div class="row container mx-auto col p-4 justify-content-center">
-			<div class="rounded bg-white col-12 text-center p-4">
-				<div class="row">
-					<p class="col-6 text-start text-dark fs-6">02/14/23 12:20 PM</p>
-					<p class="col-6 text-end text-danger fs-6">Status: Pending</p>
-					<h6 class="text-primary col-6 text-start">Delivery Option: </h6>
-					<div class="col-6 text-end">
-						<button class="btn btn-primary">Prepare Order</button>
+	<div id="bookingsContainer">
+	</div>
+	
+	<div id="modalChat" class="modal fade" tabindex="-1" aria-labelledby="tvChatTitle" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-scrollable modal-dialog-centered modal-lg">
+			<div id="divModalContent" class="modal-content">
+				<div class="modal-header">
+					<h1 id="tvChatTitle" class="col-6 modal-title fs-5 text-start">Chat</h1>
+					<button id="btnCloseModal" type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div id="divModalBody" class="modal-body vh-100 col-12">
+					<div id="divChatWrapper" class="col-12">
+						<div id="divChatContainer" class="col-12">
+						</div>
 					</div>
-					<p class="col-12 text-start text-dark fs-6">Delivery Address: </p>
-					<h6 class="text-primary col-12 text-start mt-2">Items</h6>
 				</div>
-				<div class="row">
-					<table class="table align-middle mt-3">
-						<thead>
-							<tr>
-								<th class="col-1 invisible">Image</th>
-								<th class="col-2">Product</th>
-								<th class="col-2">Details</th>
-								<th class="col-1">Quantity</th>
-								<th class="col-1">Price</th>
-								<th class="col-1">Subtotal</th>
-							</tr>
-						</thead>
-						<tbody></tbody>
-					</table>
-				</div>
-				<div class="row">
-					<h6 class="text-primary col-12 text-end mt-2">Total: </h6>
+				<div class="modal-footer">
+					<div class="input-group mb-3">
+						<textarea id="etChatBox" type="text" class="form-control me-3 rounded" placeholder="Write a message..." aria-label="Write a message..."></textarea>
+						<div>
+							<button id="btnSend" class="btn btn-primary rounded" type="button"><i class="bi bi-send-fill text-white fs-6"></i></button>
+						</div>
+					</div>
 				</div>
 			</div>
-		</div-->
+		</div>
 	</div>
 
-	<script src="/node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+	<script src="/node_modules/bootstrap/dist/js/bootstrap.bundle.js"></script>
 </body>
 </html>

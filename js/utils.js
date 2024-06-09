@@ -1,27 +1,65 @@
 import { db } from '../js/firebase.js';
-import { doc, getDoc } from 'https://www.gstatic.com/firebasejs/9.16.0/firebase-firestore.js';
+import { doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.5.2/firebase-firestore.js';
 
 /* authentication */
 export function checkUserTypeThenRedirect(user) {
 	if (!user) {
+		window.location = "./login.html";
 		return;
 	}
 
 	const docRef = doc(db, "users", user.uid);
 	getDoc(docRef).then(userSnap => {
 		const userType = userSnap.data().userType;
-		if (userType == 0) {
-			window.location = "../shop.html";
-		}
-		else if (userType == 1) {
-			window.location = "../admin/dashboard.html";
+		// if (userType == 0) {
+		// 	window.location = "./login.html";
+		// }
+		// else
+		if (userType == 1) {
+			window.location = "./menu-items.html";
 		}
 	});
 }
 
+export function capitalizeFirstLetter(string) {
+	return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
+export function parseDate(millis) {
+    const date = new Date(millis);
+    const formattedDate = date.toLocaleString('en-US',
+        {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+            // weekday:"long",
+            // hour: '2-digit',
+            // hour12: true,
+            // minute:'2-digit',
+            //second:'2-digit'
+        });
+    return formattedDate;
+}
+
+export function parseTime(millis) {
+    const date = new Date(millis);
+    const formattedDate = date.toLocaleString('en-US',
+        {
+            // year: 'numeric',
+            // month: 'long',
+            // day: 'numeric'
+            // weekday:"long",
+            hour: '2-digit',
+            hour12: true,
+            minute:'2-digit',
+            //second:'2-digit'
+        });
+    return formattedDate;
+}
+
 export function checkAuthThenRedirect(user) {
 	if (!user) {
-		window.location = "../shop.html";
+		window.location = "./login.html";
 		return;
 	}
 
@@ -30,15 +68,15 @@ export function checkAuthThenRedirect(user) {
 
 export function blockNonAdmins(user) {
 	if (!user) {
-		window.location = "../shop.html";
+		window.location = "./login.html";
 		return;
 	}
 
 	const docRef = doc(db, "users", user.uid);
 	getDoc(docRef).then(userSnap => {
 		const userType = userSnap.data().userType;
-		if (userType != 1) {
-			window.location = "../shop.html";
+		if (userType == 0) {
+			window.location = "./login.html";
 		}
 	});
 }
@@ -90,7 +128,7 @@ export function generateAvatar(firstName) {
     const context = canvas.getContext("2d");
 
     const foregroundColor = "white";
-    const backgroundColor = '#2980ba';
+    const backgroundColor = '#E13333';
 
     canvas.width = 35;
     canvas.height = 35;
@@ -112,28 +150,34 @@ export function generateAvatar(firstName) {
 	});
 }
 
-export function parseButtonAction(status, deliveryOption) {
+export function parseButtonAction(status) {
 	if (status == "Pending") {
-		return "Prepare Order";
+		return "Accept Booking";
+	}
+	else if (status == "Confirmed") {
+		return "Start Preparations";
 	}
 	else if (status == "Preparing") {
-		if (deliveryOption == "Delivery") {
-			return "Deliver Item";
-		}
-		else if (deliveryOption == "Pick-up") {
-			return "Mark as Ready for Pick-up";
-		}
-	}
-	else if (status == "Ready for Pick-up") {
-		return "Mark as Picked-up";
+		return "Transport Food to Venue";
 	}
 	else if (status == "In Transit") {
-		return "Mark as Delivered";
+		return "Mark as Completed";
 	}
-	else if (status == "Delivered/Picked-up") {
+	else if (status == "Completed") {
 		return -1;
 	}
 }
 // export function parseDate(millis) {
 // 	const seconds = millis
 // }
+
+export function titleCase(str) {
+	var splitStr = str.toLowerCase().split(' ');
+	for (var i = 0; i < splitStr.length; i++) {
+			// You do not need to check if i is larger than splitStr length, as your for does that for you
+			// Assign it back to the array
+			splitStr[i] = splitStr[i].charAt(0).toUpperCase() + splitStr[i].substring(1);     
+	}
+	// Directly return the joined string
+	return splitStr.join(' '); 
+}

@@ -1,107 +1,180 @@
 import { db, auth, storage } from '../js/firebase.js';
-import { onAuthStateChanged, getAuth } from 'https://www.gstatic.com/firebasejs/10.5.2/firebase-auth.js';
+import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.5.2/firebase-auth.js';
 import { doc, collection, getDoc, onSnapshot, getDocs, setDoc, updateDoc, increment, query, where, orderBy } from 'https://www.gstatic.com/firebasejs/10.5.2/firebase-firestore.js';
 import { ref, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.5.2/firebase-storage.js";
-import { parseButtonAction, parseDate, parseTime, capitalizeFirstLetter, showModal, titleCase } from '../js/utils.js';
+import { parseButtonAction, capitalizeFirstLetter, parseDate, parseTime, showModal } from '../js/utils.js';
 
-// chips
-const btnPendingLabel = document.querySelector("#btnPendingLabel");
-const btnConfirmedLabel = document.querySelector("#btnConfirmedLabel");
-const btnPreparingLabel = document.querySelector("#btnPreparingLabel");
-const btnInTransitLabel = document.querySelector("#btnInTransitLabel");
-const btnCompletedLabel = document.querySelector("#btnCompletedLabel");
-
-// toast
-const toastContentBooking = document.querySelector("#toastContentBooking");
-const toastBooking = document.querySelector("#toastBooking");
-
-const bookingsContainer = document.querySelector("#bookingsContainer");
-
-// chat
-const divChatContainer = document.querySelector("#divChatContainer");
-const tvChatTitle = document.querySelector("#tvChatTitle");
+const tbodyUsers = document.querySelector("#tbodyUsers");
+const tvUserName = document.querySelector("#tvUserName");
+const bookingsContainer = document.querySelector("#ordersContainer");
+const etFirstName = document.querySelector("#etFirstName");
+const etLastName = document.querySelector("#etLastName");
+const btnSearchUser = document.querySelector("#btnSearchUser");
+const btnSearchId = document.querySelector("#btnSearchId");
+const dlId = document.querySelector("#dlId");
+const dlFirstName = document.querySelector("#dlFirstName");
+const dlLastName = document.querySelector("#dlLastName");
 
 onAuthStateChanged(auth, user => {
 	const docRef = doc(db, "users", user.uid);
 	getDoc(docRef).then(userSnap => {
 		const userType = userSnap.data().userType;
-
-		if (userType == 3) {
-			getBookingsData("In Transit");
-		}
 	});
 });
 
 window.addEventListener("load", function() {
-	getBookingsData("Pending");
-	btnPendingLabel.style.color = "white";
+	getUsersData("");
+	populateDatalists();
 });
 
-btnPendingLabel.addEventListener("click", function() {
-	getBookingsData("Pending");
-	btnPendingLabel.style.color = "white";
-	btnConfirmedLabel.style.color = "#E13333";
-	btnPreparingLabel.style.color = "#E13333";
-	btnInTransitLabel.style.color = "#E13333";
-	btnCompletedLabel.style.color = "#E13333";
+btnSearchUser.addEventListener("click", function() {
+	getUsersData("name");
 });
 
-btnConfirmedLabel.addEventListener("click", function() {
-	getBookingsData("Confirmed");
-	btnPendingLabel.style.color = "#E13333";
-	btnConfirmedLabel.style.color = "white";
-	btnPreparingLabel.style.color = "#E13333";
-	btnInTransitLabel.style.color = "#E13333";
-	btnCompletedLabel.style.color = "#E13333";
-});
+// btnSearchId.addEventListener("click", function() {
+// 	etFirstName.value = "";
+// 	etLastName.value = "";
+// 	getUsersData("id");
+// });
 
+function populateDatalists() {
+	dlFirstName.value = "";
+}
 
-btnPreparingLabel.addEventListener("click", function() {
-	getBookingsData("Preparing");
-	btnPendingLabel.style.color = "#E13333";
-	btnConfirmedLabel.style.color = "#E13333";
-	btnPreparingLabel.style.color = "white";
-	btnInTransitLabel.style.color = "#E13333";
-	btnCompletedLabel.style.color = "#E13333";
-});
-btnInTransitLabel.addEventListener("click", function() {
-	getBookingsData("In Transit");
-	btnPendingLabel.style.color = "#E13333";
-	btnConfirmedLabel.style.color = "#E13333";
-	btnPreparingLabel.style.color = "#E13333";
-	btnInTransitLabel.style.color = "white";
-	btnCompletedLabel.style.color = "#E13333";
-});
+function getUsersData(filter) {
+	let qryUsers = null;
 
-btnCompletedLabel.addEventListener("click", function() {
-	getBookingsData("Completed");
-	btnPendingLabel.style.color = "#E13333";
-	btnConfirmedLabel.style.color = "#E13333";
-	btnPreparingLabel.style.color = "#E13333";
-	btnInTransitLabel.style.color = "#E13333";
-	btnCompletedLabel.style.color = "white";
-});
-
-function getBookingsData(filterStatus) {
-	let qryBookings = null;
-
-	if (filterStatus == "Completed") {
-		qryBookings = query(collection(db, "bookings"), where("status", "==", filterStatus), orderBy("timestamp", "asc"));
+	if (etFirstName.value.toUpperCase() && !etLastName.value.toUpperCase()) {
+		qryUsers = query(collection(db, "users"), where("firstName", "==", etFirstName.value.toUpperCase()));	
 	}
-	else {
-		qryBookings = query(collection(db, "bookings"), where("status", "==", filterStatus), orderBy("timestamp", "desc"));
+	else if (!etFirstName.value.toUpperCase() && etLastName.value.toUpperCase()) {
+		qryUsers = query(collection(db, "users"), where("lastName", "==", etLastName.value.toUpperCase()));	
+	}
+	else if (etFirstName.value.toUpperCase() && etLastName.value.toUpperCase()) {
+		qryUsers = query(collection(db, "users"), where("firstName", "==", etFirstName.value.toUpperCase()), where("lastName", "==", etLastName.value.toUpperCase()));	
+	}
+	else if (!etFirstName.value && !etLastName.value) {
+		qryUsers = query(collection(db, "users"));	
 	}
 	
-	onSnapshot(qryBookings, (bookings) => {
+	onSnapshot(qryUsers, (users) => {
 		// clear table
-		bookingsContainer.innerHTML = '';
+		tbodyUsers.innerHTML = '';
 
-		console.log("Bookings size: "+bookings.size);
-		if (bookings.size == 0) {
-			bookingsContainer.innerHTML = '<div class="col-12 text-center mt-4"><h4>No Bookings to Display</h4></div>';
+		console.log("Users size: "+users.size);
+		if (users.size == 0) {
+			tbodyUsers.innerHTML = '<div class="col-12 text-center mt-4"><h4>No Users to Display</h4></div>';
 		}
 		else {
-			bookingsContainer.innerHTML = '';
+			tbodyUsers.innerHTML = '';
+		}
+			
+		users.forEach(user => {
+			if (user.data().email != "beautypro.admin@gmail.com") {
+				// const newIdOption = document.createElement('option');
+				// newIdOption.value = user.id;
+				// dlId.appendChild(newIdOption);
+
+				const newFirstNameOption = document.createElement('option');
+				newFirstNameOption.value = user.data().firstName;
+				dlFirstName.appendChild(newFirstNameOption);
+				
+				const newLastNameOption = document.createElement('option');
+				newLastNameOption.value = user.data().lastName;
+				dlLastName.appendChild(newLastNameOption);
+			}
+
+			if (user.data().userType != 1 || user.data().userType != 2) {
+				if (user.data().email != "kuyads-lutongbahay@gmail.com") {
+					renderUsers(
+						user.id,
+						user.data().firstName,
+						user.data().lastName,
+						user.data().email,
+						user.data().mobile,
+						user.data().addressPurok,
+						user.data().addressBarangay
+					);
+				}
+			}
+		});
+	});
+}
+
+function renderUsers(id, firstName, lastName, email, mobile, addressPurok, addressBarangay) {
+	const newRow = document.createElement('tr');
+	// const cellId = document.createElement('td');
+	const cellName = document.createElement('td');
+	const cellAddress = document.createElement('td');
+	const cellMobile = document.createElement('td');
+	const cellEmail = document.createElement('td');
+	// const cellVerification = document.createElement('td');
+	// const btnVerificationAction = document.createElement('button');
+	// const tvVerificationMessage = document.createElement('p');
+	const cellHistory = document.createElement('td');
+	const btnHistoryAction = document.createElement('button');
+
+	// cellId.innerHTML = id;
+	cellName.innerHTML = firstName + " " + lastName;
+	cellAddress.innerHTML = ((addressPurok?(addressPurok + ", SIATON"):""))?(addressPurok?(addressPurok + ", SIATON"):""):"No Address Specified";
+	cellMobile.innerHTML = mobile;
+	cellEmail.innerHTML = email;
+
+	// btnVerificationAction.className = "btn btn-no-border btn-success";
+	// btnVerificationAction.innerHTML = "Verify";
+	// tvVerificationMessage.className = "text-success";
+	// tvVerificationMessage.innerHTML = "Verified";
+	// if (!isVerified) {
+	// 	btnVerificationAction.classList.toggle("d-none", false);
+	// 	tvVerificationMessage.classList.toggle("d-none", true);
+	// }
+	// else {
+	// 	btnVerificationAction.classList.toggle("d-none", true);
+	// 	tvVerificationMessage.classList.toggle("d-none", false);
+	// }
+	// btnVerificationAction.onclick = function() {
+	// 	verifyUser(id);
+	// }
+
+	btnHistoryAction.className = "btn btn-no-border btn-primary";
+	btnHistoryAction.innerHTML = "View";
+	btnHistoryAction.onclick = function() {
+		viewUserHistory(id, firstName, lastName);
+	}
+	
+	// newRow.appendChild(cellId);
+	newRow.appendChild(cellName);
+	newRow.appendChild(cellAddress);
+	newRow.appendChild(cellMobile);
+	newRow.appendChild(cellEmail);
+	// newRow.appendChild(cellVerification);
+	// cellVerification.appendChild(btnVerificationAction);
+	// cellVerification.appendChild(tvVerificationMessage);
+	newRow.appendChild(cellHistory);
+	cellHistory.appendChild(btnHistoryAction);
+	
+	tbodyUsers.append(newRow);
+}
+
+// function verifyUser(userId) {
+// 	updateDoc(doc(db, "users", userId), {
+// 		isVerified: true
+// 	});
+// }
+
+function viewUserHistory(userId, firstName, lastName) {
+	tvUserName.innerHTML = firstName + " " + lastName;
+	showModal("#modalViewHistory");
+
+	getDocs(query(collection(db, "bookings"), where("customerUid", "==", userId), orderBy("timestamp", "asc"))).then((bookings) => {
+		// clear table
+		ordersContainer.innerHTML = '';
+
+		if (bookings.size == 0) {
+			ordersContainer.innerHTML = '<div class="col-12 text-center mt-4"><h4>No Orders to Display</h4></div>';
+		}
+		else {
+			ordersContainer.innerHTML = '';
 		}
 			
 		bookings.forEach(order => {
@@ -244,92 +317,46 @@ function renderOrderCard(id, customerUid, firstName, lastName, mobile, eventType
 	getOrderItemsData(id, dishes, tbody);
 }
 
-function chat(userUid) {
-	showModal('#modalChat');
-
-	const refPatientName = doc(db, "users", userUid);
-
-	getDoc(refPatientName).then((patient) => {
-		tvChatTitle.innerHTML = titleCase(patient.data().firstName + " " + patient.data().lastName);
-	});
-
-	const qryChat = query(collection(db, "chats", userUid, "chats"), orderBy("timestamp", "asc"));
-
-	onSnapshot(qryChat, (docSnapshots) => {
-		divChatContainer.innerHTML = "";
-
-		docSnapshots.forEach((chat) => {
-			const chatBubble = document.createElement("div");
-			const chatMessage = document.createElement("span");
-
-			chatMessage.innerHTML = chat.data().message;
-
-			chatBubble.className = "col-12 py-2";
-			chatMessage.className = "rounded p-2";
-
-			// if currently signed in user is the author of this message:
-			if (chat.data().authorUid == getAuth().currentUser.uid) {
-				chatBubble.classList.toggle("text-end", true);
-				chatMessage.classList.toggle("bg-primary", true);
-				chatMessage.classList.toggle("text-white", true);
-			}
-			else {
-				chatBubble.classList.toggle("text-start", true);
-				chatMessage.classList.toggle("bg-secondary", true);
-				chatMessage.classList.toggle("text-dark", true);
-			}
-
-			chatBubble.append(chatMessage);
-			divChatContainer.append(chatBubble);
-		});
-
-		divModalBody.scrollTo(0, divModalBody.scrollHeight);
-	});
-	
-	btnSend.onclick = function() {
-		const refNewChat = doc(collection(db, "chats", userUid, "chats"));
-
-		const newChatData = {
-			id: refNewChat.id,
-			authorUid: getAuth().currentUser.uid,
-			message: etChatBox.value,
-			timestamp: Date.now()
-		}
-
-		setDoc(refNewChat, newChatData);
-		etChatBox.value = "";
-		etChatBox.style.height = "1px";
-	}
-}
-
-function updateOrderStatus(orderId, firstName, lastName, status, deliveryOption, total) {
-	bootstrap.Toast.getOrCreateInstance(toastBooking).show();
+function updateOrderStatus(orderId, status, deliveryOption, total, userUid, firstName, lastName) {
 	if (status == "Pending") {
-		toastContentBooking.innerHTML = titleCase(firstName + " " + lastName)+ "'s booking has been accepted.";
-		updateDoc(doc(db, "bookings", orderId), {
-			status: "Confirmed"
-		});
-	}
-	else if (status == "Confirmed") {
-		toastContentBooking.innerHTML = "Preparing " + titleCase(firstName + " " + lastName)+ "'s booking.";
-		updateDoc(doc(db, "bookings", orderId), {
+		updateDoc(doc(db, "orders", orderId), {
 			status: "Preparing"
+		});
+
+		const now = new Date();
+		const thisMonth = ("0" + (now.getMonth() + 1)).slice(-2);
+		const thisYear = now.getFullYear();
+		setDoc(doc(db, "revenue", thisYear+thisMonth), {
+			revenue: increment(total)
+		},
+		{
+			merge:true
 		});
 	}
 	else if (status == "Preparing") {
-		toastContentBooking.innerHTML = titleCase(firstName + " " + lastName) + "'s booking is now in transit.";
-		updateDoc(doc(db, "bookings", orderId), {
-			status: "In Transit"
+		if (deliveryOption == "Delivery") {
+			updateDoc(doc(db, "orders", orderId), {
+				status: "In Transit"
+			});
+		}
+		else if (deliveryOption == "Pick-up") {
+			updateDoc(doc(db, "orders", orderId), {
+				status: "Ready for Pick-up"
+			});
+		}
+	}
+	else if (status == "In Transit" || status == "Ready for Pick-up") {
+		updateDoc(doc(db, "orders", orderId), {
+			status: "Delivered/Picked-up"
 		});
 	}
-	else if (status == "In Transit") {
-		toastContentBooking.innerHTML = titleCase(firstName + " " + lastName) + "'s booking has been completed.";
-		updateDoc(doc(db, "bookings", orderId), {
-			status: "Completed"
+	else if (status == "Marked as Failed Delivery") {
+		updateDoc(doc(db, "orders", orderId), {
+			status: "Failed Delivery"
 		});
 	}
-21
-	getBookingsData(status);
+	
+	viewUserHistory(userUid, firstName, lastName);
 }
 
 async function getOrderItemsData(orderId, dishes, tbody) {
